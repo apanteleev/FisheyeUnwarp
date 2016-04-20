@@ -50,28 +50,26 @@ ParamsSetup(
     AEFX_CLR_STRUCT(def);
 
     PF_ADD_FLOAT_SLIDER("Input FOV",
-        UNWARP_FOV_MIN,
-        UNWARP_FOV_MAX,
-        UNWARP_FOV_MIN,
-        UNWARP_FOV_MAX,
+        10.0f, 170.f,   // Valid Min, Max
+        30.0f, 140.f,   // Slider Min, Max
         CURVE_TOLERANCE,
-        UNWARP_INPUT_FOV_DFLT,
+        96.0f,          // Default
         2,
         PF_ValueDisplayFlag_NONE,
         false,
         UNWARP_INPUT_FOV);
 
-    PF_ADD_FLOAT_SLIDER("Output FOV",
-        UNWARP_FOV_MIN,
-        UNWARP_FOV_MAX,
-        UNWARP_FOV_MIN,
-        UNWARP_FOV_MAX,
+    AEFX_CLR_STRUCT(def);
+
+    PF_ADD_FLOAT_SLIDER("Scale",
+        0.1f, 10.f,     // Valid Min, Max
+        0.2f, 2.0f,     // Slider Min, Max
         CURVE_TOLERANCE,
-        UNWARP_OUTPUT_FOV_DFLT,
+        1.0f,           // Default
         2,
         PF_ValueDisplayFlag_NONE,
         false,
-        UNWARP_OUTPUT_FOV);
+        UNWARP_SCALE);
 
     AEFX_CLR_STRUCT(def);
 
@@ -113,9 +111,10 @@ Render(
     closure.sampleParams.src = closure.input;
 
     double inputFov = params[UNWARP_INPUT_FOV]->u.fs_d.value;
-    double outputFov = params[UNWARP_OUTPUT_FOV]->u.fs_d.value;
+    double scale = params[UNWARP_SCALE]->u.fs_d.value;
+    double outputFov = inputFov;
     double outputFovTan = tan(outputFov * 0.5 * M_PI / 180.0);
-    double invHalfOutputWidth = 2.0 / double(output->width);
+    double invHalfOutputWidth = 2.0 / double(output->width) / scale;
     closure.P = invHalfOutputWidth * outputFovTan;
 
     double halfInputWidth = double(closure.input->width) * 0.5;
@@ -137,6 +136,7 @@ Render(
 
         PF_Pixel8* outputPixelP = (PF_Pixel8*)((char*)closure->outputPixels + outputY * closure->output->rowbytes);
 
+        // Parts of the distortion math that are loop invariant
         double P = closure->P;
         double Q = closure->Q;
         double Psq = P * P;
@@ -147,11 +147,15 @@ Render(
         for (double relativeX = -outputCenterX; relativeX < outputCenterX; relativeX += 1.0)
         {
 #if 0
+            // R is the distance between output center and this pixel
             double R = sqrt(relativeX * relativeX + relativeY * relativeY);
+            // Angle between the view vector (Z) and vector to this pixel
             double angle = atan(R * P);
+            // New distance under the orthographic fisheye projection
             double newR = Q * sin(angle);
             double distortion = newR / R;
 #else
+            // Same result as the above math, optimized using trigonometry
             double distortion = PQ / sqrt(relativeX * relativeX * Psq + XsqBias);
 #endif
 

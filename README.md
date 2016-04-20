@@ -17,7 +17,8 @@ Currently, the plug-in is for Windows x64 systems only.
 
 You'll find this effect under Video Effects / Distort category. After applying it to a track with default settings, you should see an image with heavily distorted boundaries. 
 
-There are only two settings: Input FOV and Output FOV. These are horizontal FOVs measured in degrees. Input FOV should match your camera and setting; the default value of 96 seems to work well for GoPro Hero4 with Wide setting. Tune it until all the straight lines become straight on the screen. Output FOV is basically a scale factor for the output image; reduce it to make the output larger.
+There are only two settings: Input FOV and Scale. Input FOV is the horizontal field of view measured in degrees. It should match your camera and setting; the default value of 96 seems to work well for GoPro Hero4 with Wide setting. Tune it until all the straight lines become straight on the screen. Setting Scale to 1.0 means that the output image will touch the left and right screen borders but not touch the top and bottom borders (assuming a wide format).
+
 
 ## How to build
 
